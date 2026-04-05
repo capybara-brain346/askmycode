@@ -5,8 +5,9 @@ import subprocess
 from pathlib import Path
 from typing import Callable
 
-from .config import MAX_FILE_SIZE, get_whitelist
-from .state import WhitelistViolation
+from config import MAX_FILE_SIZE
+from utils import get_whitelist
+from state import WhitelistViolation
 
 
 def _validate_repo(repo: str) -> Path:
@@ -25,7 +26,6 @@ def _validate_repo(repo: str) -> Path:
 
 
 def _validate_path(repo_root: Path, path: str) -> Path:
-    # Strip leading slashes so joinpath works correctly
     rel = path.lstrip("/")
     candidate = (repo_root / rel).resolve()
     if not candidate.is_relative_to(repo_root):
@@ -118,7 +118,6 @@ def search_code(query: str, repos: list[str] | None = None) -> list[dict]:
             continue
 
         for line in proc.stdout.splitlines()[:50]:
-            # grep -n format: /abs/path/file.py:42:content
             parts = line.split(":", 2)
             if len(parts) < 3:
                 continue

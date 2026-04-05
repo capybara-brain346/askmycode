@@ -5,11 +5,18 @@ import json
 import streamlit as st
 
 from config import load_config
+from utils import ensure_repos, get_whitelist
 from graph import compiled_graph
 from logger import get_logger
 from state import AgentState
 
 logger = get_logger("app")
+
+
+@st.cache_resource
+def _ensure_repos_once() -> dict[str, str]:
+    return ensure_repos()
+
 
 st.set_page_config(page_title="askmycode", page_icon="🔍", layout="centered")
 st.title("🔍 askmycode")
@@ -30,8 +37,15 @@ with st.sidebar:
     try:
         cfg = load_config()
         st.write(f"**Model:** `{cfg.get('model', 'N/A')}`")
-        repos = cfg.get("repos", {})
-        from config import get_whitelist
+
+        clone_status = _ensure_repos_once()
+        for repo_name, status in clone_status.items():
+            if status == "cloned":
+                st.success(f"`{repo_name}` cloned successfully")
+            elif status.startswith("error:"):
+                st.error(f"`{repo_name}`: {status}")
+            elif status == "local not found":
+                st.warning(f"`{repo_name}`: local path not found")
 
         whitelist = get_whitelist()
         if whitelist:

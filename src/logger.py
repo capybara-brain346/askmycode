@@ -46,21 +46,19 @@ def _setup_logger() -> logging.Logger:
     if root.handlers:
         return root
 
-    root.setLevel(logging.DEBUG)  # logger itself captures everything
+    root.setLevel(logging.DEBUG)
     root.propagate = False
 
     _LOG_DIR.mkdir(exist_ok=True)
 
     terminal_level = _resolve_level()
 
-    # -- Terminal: level controlled by LOG_LEVEL env var --
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(terminal_level)
     stream_handler.setFormatter(
         _ColouredFormatter(fmt="%(levelname)s %(name)s | %(message)s")
     )
 
-    # -- File: always DEBUG so full detail is available on disk --
     file_handler = RotatingFileHandler(
         _LOG_FILE,
         maxBytes=5 * 1024 * 1024,  # 5 MB

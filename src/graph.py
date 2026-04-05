@@ -4,9 +4,9 @@ from typing import Literal
 
 from langgraph.graph import END, StateGraph
 
-from .config import MAX_HOPS
-from .nodes import observe_node, plan_node, synthesize_node, tools_node
-from .state import AgentState
+from config import MAX_HOPS
+from nodes import observe_node, plan_node, synthesize_node, tools_node
+from state import AgentState
 
 
 def should_continue(state: AgentState) -> Literal["tools_node", "synthesize"]:

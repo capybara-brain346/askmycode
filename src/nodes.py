@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 
-from .config import CONTEXT_BUDGET_CHARS, MAX_HOPS, call_llm
-from .logger import get_logger
-from .state import AgentState, ToolResult, WhitelistViolation
-from .tools import TOOL_FUNCTIONS, TOOL_SCHEMAS
+from config import CONTEXT_BUDGET_CHARS, MAX_HOPS
+from utils import call_llm
+from logger import get_logger
+from state import AgentState, ToolResult, WhitelistViolation
+from tools import TOOL_FUNCTIONS, TOOL_SCHEMAS
 
 logger = get_logger("nodes")
 
@@ -162,7 +163,6 @@ def observe_node(state: AgentState) -> dict:
     new_hop = state["hop_count"] + 1
     logger.debug("[observe] hop=%d | evaluating tool results", new_hop)
 
-    # Update files_read from any read_file_tool calls in the latest results
     files_read: list[list[str]] = list(state.get("files_read") or [])
     already = {tuple(pair) for pair in files_read}
     for tr in state["tool_results"]:
