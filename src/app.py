@@ -6,7 +6,7 @@ import re
 
 import streamlit as st
 
-from config import DEFAULT_MODEL, load_config
+from config import DEFAULT_MODEL
 from utils import call_llm_stream, ensure_repos, get_whitelist
 from graph import compiled_graph
 from logger import get_logger

@@ -1,4 +1,5 @@
 {
-    "model": "google/gemma-4-31b-it",
-    "repos": {}
+    "repos": {
+        "capybaradb": "repos/capybaradb"
+    }
 }
