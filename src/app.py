@@ -22,29 +22,50 @@ def _ensure_repos_once() -> dict[str, str]:
 
 
 st.set_page_config(page_title="askmycode", page_icon="🔍", layout="centered")
-st.title("🔍 askmycode")
+st.title("🔍 Askmycode")
 st.caption("Ask questions about your code repositories.")
 
 if "display_messages" not in st.session_state:
-    st.session_state.display_messages: list[dict] = []
+    st.session_state.display_messages = []
 
 if "history" not in st.session_state:
-    st.session_state.history: list[dict] = []
+    st.session_state.history = []
 
 for msg in st.session_state.display_messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
 with st.sidebar:
+    st.markdown(
+        """
+    ### [Piyush Choudhari](https://www.piyushchoudhari.me)
+    *AI & Backend Engineer*
+    
+    Specialized in Agentic Systems, LLM Evaluation, and High-Performance Backend Design.
+    
+    [GitHub](https://github.com/piyushchoudhari) | [LinkedIn](https://linkedin.com/in/piyush-choudhari) | [X](https://x.com/piyush_choudhari) | [Email](mailto:piyush@piyushchoudhari.me)
+    
+    ---
+    **Stack**
+    - Python, TypeScript, C++, Node.js
+    - Agentic Systems, LLM Evaluation
+    - Research, RAG & Search
+    
+    ---
+    [View Source](https://github.com/piyushchoudhari/askmycode)
+    """,
+        unsafe_allow_html=True,
+    )
+
+    st.divider()
+
     st.header("Configuration")
     try:
         st.write(f"**Model:** `{DEFAULT_MODEL}`")
 
         clone_status = _ensure_repos_once()
         for repo_name, status in clone_status.items():
-            if status == "cloned":
-                st.success(f"`{repo_name}` cloned successfully")
-            elif status.startswith("error:"):
+            if status.startswith("error:"):
                 st.error(f"`{repo_name}`: {status}")
             elif status == "local not found":
                 st.warning(f"`{repo_name}`: local path not found")
@@ -136,7 +157,6 @@ if user_input := st.chat_input("Ask a question about your repos…"):
             )
             raw = "".join(call_llm_stream(synth_messages))
 
-            # Strip and surface <think>…</think> blocks (Qwen-style chain-of-thought)
             think_match = re.search(r"<think>(.*?)</think>", raw, re.DOTALL)
             clean = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
             if think_match:
