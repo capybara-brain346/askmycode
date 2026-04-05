@@ -1,5 +1,6 @@
 {
     "repos": {
-        "capybaradb": "repos/capybaradb"
+        "capybaradb": "capybara-brain346/capybaradb",
+        "knowflow": "capybara-brain346/knowflow"
     }
 }
