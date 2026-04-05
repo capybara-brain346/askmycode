@@ -1,14 +1,20 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _LOG_DIR = _PROJECT_ROOT / "logs"
 _LOG_FILE = _LOG_DIR / "gitwhisper.log"
 LOGGER_NAME = "askmycode"
+
 _RESET = "\033[0m"
 _COLOURS = {
     logging.DEBUG: "\033[36m",  # cyan
@@ -26,25 +32,35 @@ class _ColouredFormatter(logging.Formatter):
         return super().format(record)
 
 
-def _setup_logger() -> logging.Logger:
-    logger = logging.getLogger(LOGGER_NAME)
-    if logger.handlers:
-        return logger
+def _resolve_level() -> int:
+    """Read LOG_LEVEL from the environment; default INFO."""
+    raw = os.environ.get("LOG_LEVEL", "INFO").upper()
+    level = getattr(logging, raw, None)
+    if not isinstance(level, int):
+        level = logging.INFO
+    return level
 
-    logger.setLevel(logging.DEBUG)
-    logger.propagate = False
+
+def _setup_logger() -> logging.Logger:
+    root = logging.getLogger(LOGGER_NAME)
+    if root.handlers:
+        return root
+
+    root.setLevel(logging.DEBUG)  # logger itself captures everything
+    root.propagate = False
 
     _LOG_DIR.mkdir(exist_ok=True)
 
+    terminal_level = _resolve_level()
+
+    # -- Terminal: level controlled by LOG_LEVEL env var --
     stream_handler = logging.StreamHandler(sys.stdout)
-    stream_handler.setLevel(logging.INFO)
+    stream_handler.setLevel(terminal_level)
     stream_handler.setFormatter(
-        _ColouredFormatter(
-            fmt="%(levelname)s %(name)s | %(message)s",
-            datefmt=None,
-        )
+        _ColouredFormatter(fmt="%(levelname)s %(name)s | %(message)s")
     )
 
+    # -- File: always DEBUG so full detail is available on disk --
     file_handler = RotatingFileHandler(
         _LOG_FILE,
         maxBytes=5 * 1024 * 1024,  # 5 MB
@@ -59,15 +75,16 @@ def _setup_logger() -> logging.Logger:
         )
     )
 
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
-    return logger
+    root.addHandler(stream_handler)
+    root.addHandler(file_handler)
+    return root
 
 
-log = _setup_logger()
+logger = _setup_logger()
 
 
 def get_logger(name: str | None = None) -> logging.Logger:
+    """Return a child logger under 'askmycode'."""
     if name:
         return logging.getLogger(f"{LOGGER_NAME}.{name}")
-    return log
+    return logger
