@@ -7,7 +7,7 @@ from .logger import get_logger
 from .state import AgentState, ToolResult, WhitelistViolation
 from .tools import TOOL_FUNCTIONS, TOOL_SCHEMAS
 
-_log = get_logger("nodes")
+logger = get_logger("nodes")
 
 PLAN_SYSTEM = """\
 You are Gitwhisper, an expert software engineer answering questions about code repositories.
@@ -88,23 +88,23 @@ def _trim_tool_results_to_budget(tool_results: list[ToolResult]) -> list[ToolRes
 
 def plan_node(state: AgentState) -> dict:
     hop = state["hop_count"] + 1
-    _log.info("[plan] hop=%d | querying LLM for next tool call", hop)
+    logger.debug("[plan] hop=%d | querying LLM", hop)
     messages = [{"role": "system", "content": PLAN_SYSTEM}] + state["messages"]
     response = call_llm(messages, tools=TOOL_SCHEMAS)
     assistant_msg: dict = response["choices"][0]["message"]
     tool_calls = assistant_msg.get("tool_calls") or []
     if tool_calls:
         names = [tc["function"]["name"] for tc in tool_calls]
-        _log.info("[plan] hop=%d | model chose tool(s): %s", hop, names)
+        logger.debug("[plan] hop=%d | tool(s) chosen: %s", hop, names)
     else:
-        _log.info("[plan] hop=%d | model chose to answer directly (no tool calls)", hop)
+        logger.info("[plan] hop=%d | model answered directly — no tool calls", hop)
     return {"messages": [assistant_msg]}
 
 
 def tools_node(state: AgentState) -> dict:
     last = _last_message(state)
     tool_calls: list[dict] = last.get("tool_calls") or []
-    _log.info("[tools] executing %d tool call(s)", len(tool_calls))
+    logger.debug("[tools] executing %d tool call(s)", len(tool_calls))
 
     tool_messages: list[dict] = []
     tool_results: list[ToolResult] = []
@@ -118,11 +118,11 @@ def tools_node(state: AgentState) -> dict:
         except json.JSONDecodeError:
             args = {}
 
-        _log.info("[tools] → %s(%s)", fn_name, json.dumps(args, ensure_ascii=False))
+        logger.debug("[tools] → %s(%s)", fn_name, json.dumps(args, ensure_ascii=False))
         func = TOOL_FUNCTIONS.get(fn_name)
         if func is None:
             result_str = f"[ERROR] Unknown tool: {fn_name}"
-            _log.warning("[tools] unknown tool requested: %s", fn_name)
+            logger.warning("[tools] unknown tool requested: %s", fn_name)
         else:
             try:
                 result = func(**args)
@@ -131,13 +131,15 @@ def tools_node(state: AgentState) -> dict:
                     if not isinstance(result, str)
                     else result
                 )
-                _log.info("[tools] ✓ %s completed (%d chars)", fn_name, len(result_str))
+                logger.debug(
+                    "[tools] ✓ %s completed (%d chars)", fn_name, len(result_str)
+                )
             except WhitelistViolation as exc:
                 result_str = f"[WHITELIST VIOLATION] {exc}"
-                _log.warning("[tools] whitelist violation in %s: %s", fn_name, exc)
+                logger.warning("[tools] whitelist violation in %s: %s", fn_name, exc)
             except Exception as exc:
                 result_str = f"[ERROR] {type(exc).__name__}: {exc}"
-                _log.error(
+                logger.error(
                     "[tools] error in %s: %s: %s", fn_name, type(exc).__name__, exc
                 )
 
@@ -158,7 +160,7 @@ def tools_node(state: AgentState) -> dict:
 
 def observe_node(state: AgentState) -> dict:
     new_hop = state["hop_count"] + 1
-    _log.info("[observe] hop=%d | evaluating tool results", new_hop)
+    logger.debug("[observe] hop=%d | evaluating tool results", new_hop)
 
     # Update files_read from any read_file_tool calls in the latest results
     files_read: list[list[str]] = list(state.get("files_read") or [])
@@ -187,7 +189,7 @@ def observe_node(state: AgentState) -> dict:
     ]
 
     if new_hop >= MAX_HOPS:
-        _log.warning(
+        logger.warning(
             "[observe] hop=%d | MAX_HOPS reached — forcing synthesize", new_hop
         )
         return {
@@ -207,12 +209,18 @@ def observe_node(state: AgentState) -> dict:
         decision = "loop"
         reasoning = "(parse error — defaulting to loop)"
 
-    _log.info(
-        "[observe] hop=%d | decision=%s | reason: %s",
-        new_hop,
-        decision.upper(),
-        reasoning,
-    )
+    if decision == "synthesize":
+        logger.info(
+            "[observe] hop=%d | SYNTHESIZE — %s",
+            new_hop,
+            reasoning,
+        )
+    else:
+        logger.debug(
+            "[observe] hop=%d | LOOP — %s",
+            new_hop,
+            reasoning,
+        )
     return {
         "hop_count": new_hop,
         "files_read": files_read,
@@ -221,7 +229,7 @@ def observe_node(state: AgentState) -> dict:
 
 
 def synthesize_node(state: AgentState) -> dict:
-    _log.info(
+    logger.info(
         "[synthesize] writing final answer | %d tool result(s) | %d hop(s)",
         len(state["tool_results"]),
         state["hop_count"],
