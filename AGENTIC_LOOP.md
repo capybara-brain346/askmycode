@@ -1,4 +1,4 @@
-# Gitwhisper — Agentic Loop PRD
+# askmycode — Agentic Loop PRD
 
 | Field | Value |
 |---|---|

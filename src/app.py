@@ -4,15 +4,15 @@ import json
 
 import streamlit as st
 
-from askmycode.config import load_config
-from askmycode.graph import compiled_graph
-from askmycode.logger import get_logger
-from askmycode.state import AgentState
+from config import load_config
+from graph import compiled_graph
+from logger import get_logger
+from state import AgentState
 
 logger = get_logger("app")
 
-st.set_page_config(page_title="Gitwhisper", page_icon="🔍", layout="centered")
-st.title("🔍 Gitwhisper")
+st.set_page_config(page_title="askmycode", page_icon="🔍", layout="centered")
+st.title("🔍 askmycode")
 st.caption("Ask questions about your code repositories.")
 
 if "display_messages" not in st.session_state:
@@ -31,7 +31,7 @@ with st.sidebar:
         cfg = load_config()
         st.write(f"**Model:** `{cfg.get('model', 'N/A')}`")
         repos = cfg.get("repos", {})
-        from askmycode.config import get_whitelist
+        from config import get_whitelist
 
         whitelist = get_whitelist()
         if whitelist:

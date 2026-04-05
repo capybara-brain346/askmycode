@@ -1,7 +1,7 @@
 [project]
 name = "askmycode"
 version = "0.1.0"
-description = "Gitwhisper — agentic code Q&A loop over local repos"
+description = "askmycode — agentic code Q&A loop over local repos"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

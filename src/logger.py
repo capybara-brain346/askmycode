@@ -12,7 +12,7 @@ load_dotenv()
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _LOG_DIR = _PROJECT_ROOT / "logs"
-_LOG_FILE = _LOG_DIR / "gitwhisper.log"
+_LOG_FILE = _LOG_DIR / "askmycode.log"
 LOGGER_NAME = "askmycode"
 
 _RESET = "\033[0m"
