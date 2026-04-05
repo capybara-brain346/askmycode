@@ -56,7 +56,10 @@ def _setup_logger() -> logging.Logger:
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(terminal_level)
     stream_handler.setFormatter(
-        _ColouredFormatter(fmt="%(levelname)s %(name)s | %(message)s")
+        _ColouredFormatter(
+            fmt="%(asctime)s %(levelname)s %(name)s | %(message)s",
+            datefmt="%H:%M:%S",
+        )
     )
 
     file_handler = RotatingFileHandler(

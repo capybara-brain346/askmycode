@@ -100,23 +100,23 @@ def _trim_tool_results_to_budget(tool_results: list[ToolResult]) -> list[ToolRes
 
 def plan_node(state: AgentState) -> dict:
     hop = state["hop_count"] + 1
-    logger.debug("[plan] hop=%d | querying LLM", hop)
+    logger.debug("plan hop=%d", hop)
     messages = [{"role": "system", "content": PLAN_SYSTEM}] + state["messages"]
     response = call_llm(messages, tools=TOOL_SCHEMAS)
     assistant_msg: dict = response["choices"][0]["message"]
     tool_calls = assistant_msg.get("tool_calls") or []
     if tool_calls:
         names = [tc["function"]["name"] for tc in tool_calls]
-        logger.debug("[plan] hop=%d | tool(s) chosen: %s", hop, names)
+        logger.debug("plan hop=%d tools=%s", hop, names)
     else:
-        logger.info("[plan] hop=%d | model answered directly — no tool calls", hop)
+        logger.info("plan hop=%d direct_answer=true", hop)
     return {"messages": [assistant_msg]}
 
 
 def tools_node(state: AgentState) -> dict:
     last = _last_message(state)
     tool_calls: list[dict] = last.get("tool_calls") or []
-    logger.debug("[tools] executing %d tool call(s)", len(tool_calls))
+    logger.debug("tools count=%d", len(tool_calls))
 
     tool_messages: list[dict] = []
     tool_results: list[ToolResult] = []
@@ -130,11 +130,13 @@ def tools_node(state: AgentState) -> dict:
         except json.JSONDecodeError:
             args = {}
 
-        logger.debug("[tools] → %s(%s)", fn_name, json.dumps(args, ensure_ascii=False))
+        logger.debug(
+            "tool_call fn=%s args=%s", fn_name, json.dumps(args, ensure_ascii=False)
+        )
         func = TOOL_FUNCTIONS.get(fn_name)
         if func is None:
             result_str = f"[ERROR] Unknown tool: {fn_name}"
-            logger.warning("[tools] unknown tool requested: %s", fn_name)
+            logger.warning("tool_unknown fn=%s", fn_name)
         else:
             try:
                 result = func(**args)
@@ -144,15 +146,18 @@ def tools_node(state: AgentState) -> dict:
                     else result
                 )
                 logger.debug(
-                    "[tools] ✓ %s completed (%d chars)", fn_name, len(result_str)
+                    "tool_done fn=%s result_chars=%d", fn_name, len(result_str)
                 )
             except WhitelistViolation as exc:
                 result_str = f"[WHITELIST VIOLATION] {exc}"
-                logger.warning("[tools] whitelist violation in %s: %s", fn_name, exc)
+                logger.warning("tool_whitelist_violation fn=%s error=%s", fn_name, exc)
             except Exception as exc:
                 result_str = f"[ERROR] {type(exc).__name__}: {exc}"
                 logger.error(
-                    "[tools] error in %s: %s: %s", fn_name, type(exc).__name__, exc
+                    "tool_error fn=%s type=%s message=%s",
+                    fn_name,
+                    type(exc).__name__,
+                    exc,
                 )
 
         tool_messages.append(
@@ -172,7 +177,7 @@ def tools_node(state: AgentState) -> dict:
 
 def observe_node(state: AgentState) -> dict:
     new_hop = state["hop_count"] + 1
-    logger.debug("[observe] hop=%d | evaluating tool results", new_hop)
+    logger.debug("observe hop=%d", new_hop)
 
     files_read: list[list[str]] = list(state.get("files_read") or [])
     already = {tuple(pair) for pair in files_read}
@@ -200,9 +205,7 @@ def observe_node(state: AgentState) -> dict:
     ]
 
     if new_hop >= MAX_HOPS:
-        logger.warning(
-            "[observe] hop=%d | MAX_HOPS reached — forcing synthesize", new_hop
-        )
+        logger.warning("observe hop=%d max_hops=true forcing=synthesize", new_hop)
         return {
             "hop_count": new_hop,
             "files_read": files_read,
@@ -222,13 +225,13 @@ def observe_node(state: AgentState) -> dict:
 
     if decision == "synthesize":
         logger.info(
-            "[observe] hop=%d | SYNTHESIZE — %s",
+            "observe hop=%d decision=synthesize reason=%s",
             new_hop,
             reasoning,
         )
     else:
         logger.debug(
-            "[observe] hop=%d | LOOP — %s",
+            "observe hop=%d decision=loop reason=%s",
             new_hop,
             reasoning,
         )

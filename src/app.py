@@ -69,7 +69,7 @@ with st.sidebar:
         st.rerun()
 
 if user_input := st.chat_input("Ask a question about your repos…"):
-    logger.info("=== query received | length=%d chars ===", len(user_input))
+    logger.info("query length=%d", len(user_input))
     st.session_state.display_messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -130,7 +130,7 @@ if user_input := st.chat_input("Ask a question about your repos…"):
 
             synth_messages, prefix = build_synthesize_messages(accumulated)
             logger.info(
-                "=== synthesizing | hops=%d tool_calls=%d ===",
+                "synthesizing hops=%d tool_calls=%d",
                 hop_count,
                 len(tool_results),
             )
@@ -149,7 +149,7 @@ if user_input := st.chat_input("Ask a question about your repos…"):
                 st.markdown(prefix)
             st.markdown(clean)
             answer = prefix + clean
-            logger.info("=== query done | answer_chars=%d ===", len(answer))
+            logger.info("query_done answer_chars=%d", len(answer))
 
             status.update(
                 label=f"Done — {hop_count} hop(s), {len(tool_results)} tool call(s)",
@@ -173,7 +173,7 @@ if user_input := st.chat_input("Ask a question about your repos…"):
 
         except Exception as exc:
             answer = f"An error occurred: {exc}"
-            logger.error("=== query failed: %s: %s ===", type(exc).__name__, exc)
+            logger.error("query_failed error=%s message=%s", type(exc).__name__, exc)
             st.error(answer)
 
     st.session_state.display_messages.append({"role": "assistant", "content": answer})

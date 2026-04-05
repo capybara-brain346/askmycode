@@ -150,9 +150,9 @@ def call_llm(
     model: str = DEFAULT_MODEL
     tool_names = [t["function"]["name"] for t in (tools or [])]
     logger.debug(
-        "LLM call | model=%s tools=%s json_mode=%s",
+        "llm_call model=%s tool_count=%d json_mode=%s",
         model,
-        tool_names or "none",
+        len(tool_names),
         json_mode,
     )
     kwargs: dict = {"model": model, "messages": messages}
@@ -166,7 +166,7 @@ def call_llm(
     finish_reason = data["choices"][0].get("finish_reason", "unknown")
     usage = data.get("usage", {})
     logger.debug(
-        "LLM done  | finish=%s prompt_tokens=%s completion_tokens=%s",
+        "llm_done finish=%s prompt_tokens=%s completion_tokens=%s",
         finish_reason,
         usage.get("prompt_tokens", "?"),
         usage.get("completion_tokens", "?"),
@@ -177,7 +177,7 @@ def call_llm(
 def call_llm_stream(messages: list[dict]) -> Iterator[str]:
     """Streaming variant for synthesis — yields text tokens as they arrive."""
     model: str = DEFAULT_MODEL
-    logger.debug("LLM stream | model=%s", model)
+    logger.debug("llm_stream model=%s", model)
     stream = _groq_client().chat.completions.create(
         model=model, messages=messages, stream=True
     )
