@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import re
 import subprocess
-import time
 from pathlib import Path
 
-import httpx
+from collections.abc import Iterator
+
+from groq import Groq
 
 from config import (
     CLONE_TIMEOUT_SECONDS,
     DEFAULT_MODEL,
-    OPENROUTER_API_KEY,
-    OPENROUTER_URL,
+    GROQ_API_KEY,
     PROJECT_ROOT,
     REPOS_ROOT,
     TIMEOUT_SECONDS,
@@ -99,25 +99,55 @@ def ensure_repos() -> dict[str, str]:
     return results
 
 
+def _groq_client() -> Groq:
+    if not GROQ_API_KEY:
+        raise ValueError("GROQ_API_KEY environment variable is not set.")
+    return Groq(api_key=GROQ_API_KEY, timeout=TIMEOUT_SECONDS, max_retries=5)
+
+
+def _completion_to_dict(completion) -> dict:
+    """Convert a Groq ChatCompletion object to the dict shape that nodes.py expects."""
+    choices = []
+    for choice in completion.choices:
+        msg = choice.message
+        tool_calls = None
+        if msg.tool_calls:
+            tool_calls = [
+                {
+                    "id": tc.id,
+                    "type": tc.type,
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    },
+                }
+                for tc in msg.tool_calls
+            ]
+        msg_dict: dict = {"role": msg.role, "content": msg.content}
+        if tool_calls:
+            msg_dict["tool_calls"] = tool_calls
+        choices.append(
+            {
+                "message": msg_dict,
+                "finish_reason": choice.finish_reason,
+            }
+        )
+    usage = {}
+    if completion.usage:
+        usage = {
+            "prompt_tokens": completion.usage.prompt_tokens,
+            "completion_tokens": completion.usage.completion_tokens,
+            "total_tokens": completion.usage.total_tokens,
+        }
+    return {"choices": choices, "usage": usage}
+
+
 def call_llm(
     messages: list[dict],
     tools: list[dict] | None = None,
     json_mode: bool = False,
 ) -> dict:
-    if not OPENROUTER_API_KEY:
-        raise ValueError("OPENROUTER_API_KEY environment variable is not set.")
-    cfg = load_config()
-    model: str = cfg.get("model", DEFAULT_MODEL)
-    payload: dict = {"model": model, "messages": messages}
-    if tools:
-        payload["tools"] = tools
-        payload["tool_choice"] = "auto"
-    if json_mode:
-        payload["response_format"] = {"type": "json_object"}
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-    }
+    model: str = DEFAULT_MODEL
     tool_names = [t["function"]["name"] for t in (tools or [])]
     logger.debug(
         "LLM call | model=%s tools=%s json_mode=%s",
@@ -125,33 +155,14 @@ def call_llm(
         tool_names or "none",
         json_mode,
     )
-    max_retries = 5
-    backoff = 5.0
-    for attempt in range(max_retries):
-        response = httpx.post(
-            OPENROUTER_URL, json=payload, headers=headers, timeout=TIMEOUT_SECONDS
-        )
-        if response.status_code == 429:
-            retry_after = response.headers.get("Retry-After")
-            wait = float(retry_after) if retry_after else backoff * (2**attempt)
-            logger.warning(
-                "LLM 429 rate-limited | attempt=%d/%d | waiting %.1fs",
-                attempt + 1,
-                max_retries,
-                wait,
-            )
-            if attempt < max_retries - 1:
-                time.sleep(wait)
-                continue
-        response.raise_for_status()
-        break
-    data = response.json()
-    if "error" in data or "choices" not in data:
-        err = data.get("error", data)
-        err_code = err.get("code", "?") if isinstance(err, dict) else "?"
-        err_msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
-        logger.error("LLM error | code=%s message=%s", err_code, err_msg)
-        raise RuntimeError(f"OpenRouter error {err_code}: {err_msg}")
+    kwargs: dict = {"model": model, "messages": messages}
+    if tools:
+        kwargs["tools"] = tools
+        kwargs["tool_choice"] = "auto"
+    if json_mode:
+        kwargs["response_format"] = {"type": "json_object"}
+    completion = _groq_client().chat.completions.create(**kwargs)
+    data = _completion_to_dict(completion)
     finish_reason = data["choices"][0].get("finish_reason", "unknown")
     usage = data.get("usage", {})
     logger.debug(
@@ -161,3 +172,16 @@ def call_llm(
         usage.get("completion_tokens", "?"),
     )
     return data
+
+
+def call_llm_stream(messages: list[dict]) -> Iterator[str]:
+    """Streaming variant for synthesis — yields text tokens as they arrive."""
+    model: str = DEFAULT_MODEL
+    logger.debug("LLM stream | model=%s", model)
+    stream = _groq_client().chat.completions.create(
+        model=model, messages=messages, stream=True
+    )
+    for chunk in stream:
+        delta = chunk.choices[0].delta.content if chunk.choices else None
+        if delta:
+            yield delta
