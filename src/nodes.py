@@ -33,6 +33,21 @@ Tools available:
 - "What does this repo do" → get_repo_metadata + top-level module structure is usually enough.
 - "Why does X happen" → trace the call chain: definition → callers → config.
 
+**Conceptual / feature queries** (e.g. "does this repo do web scraping?", "how is auth handled?", "where is caching?"):
+- The concept may not appear verbatim in the code. Search for the *libraries or primitives* the concept implies:
+  - web scraping / HTTP fetching → `requests|httpx|BeautifulSoup|scrapy|playwright|aiohttp|urllib`
+  - authentication / auth → `jwt|token|OAuth|authenticate|login|password`
+  - caching → `cache|redis|memcached|lru_cache|ttl`
+  - queuing / messaging → `queue|celery|sqs|rabbitmq|kafka|publish|subscribe`
+- Use `|` alternation in a **single** search_code call to cover all synonyms at once.
+- search_code supports full extended regex (grep -E): `(scrape|fetch).*url` is valid.
+
+**When a search returns no results:**
+- Do NOT conclude the concept is absent after one failed search.
+- Do NOT jump to get_file_tree browsing — that is slow and unlikely to help.
+- Pivot immediately: try alternative library names, root concepts, or abbreviated terms.
+- Only after two or more targeted searches all return nothing should you consider the feature absent.
+
 **When to stop calling tools:**
 - You have the specific code, config, or explanation needed to answer accurately → answer directly without calling any tool.
 - Do NOT call another tool "just to be sure". If the code is clear, trust it.
@@ -58,7 +73,12 @@ Respond with valid JSON only — no markdown, no extra text:
 - The query has multiple parts and some remain completely unaddressed.
 
 ## Bias toward "synthesize"
-Over-exploration wastes hops and adds noise. An answer grounded in partial but correct evidence is better than an endless loop. When in doubt and the key information is present, synthesize.
+Over-exploration wastes hops and adds noise. An answer grounded in partial but correct evidence is better than an endless loop. When the key information has already been read, synthesize.
+
+**Exception — choose "loop" when evidence is absent:**
+- All search_code calls returned zero results AND no relevant file has been opened.
+- Searches used only one narrow keyword for a concept that has many synonyms or library names — the agent should try alternatives before giving up.
+- The query cannot be answered from the current results without guessing or inventing detail.
 """
 
 SYNTHESIZE_SYSTEM = """\
@@ -101,7 +121,18 @@ def _trim_tool_results_to_budget(tool_results: list[ToolResult]) -> list[ToolRes
 def plan_node(state: AgentState) -> dict:
     hop = state["hop_count"] + 1
     logger.debug("plan hop=%d", hop)
-    messages = [{"role": "system", "content": PLAN_SYSTEM}] + state["messages"]
+
+    system_content = PLAN_SYSTEM
+    tagged = state.get("tagged_repos") or []
+    if tagged:
+        repo_list = ", ".join(f"'{r}'" for r in tagged)
+        system_content = (
+            PLAN_SYSTEM
+            + f"\n\n## Repo scope\nThe user has tagged the following repos: {repo_list}. "
+            "Restrict your exploration to these repos unless the question explicitly requires others."
+        )
+
+    messages = [{"role": "system", "content": system_content}] + state["messages"]
     response = call_llm(messages, tools=TOOL_SCHEMAS)
     assistant_msg: dict = response["choices"][0]["message"]
     tool_calls = assistant_msg.get("tool_calls") or []

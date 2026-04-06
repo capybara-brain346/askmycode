@@ -26,3 +26,5 @@ class AgentState(TypedDict):
     hop_count: int
 
     answer: str | None
+
+    tagged_repos: list[str]

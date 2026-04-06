@@ -1,6 +1,10 @@
 {
     "repos": {
         "capybaradb": "capybara-brain346/capybaradb",
-        "knowflow": "capybara-brain346/knowflow"
+        "knowflow": "capybara-brain346/knowflow",
+        "atjbot": "capybara-brain346/atjbot",
+        "capynodes-backend": "capybara-brain346/capynodes-backend",
+        "sqs-implementation": "capybara-brain346/sqs-implementation",
+        "pagedattention-simulation": "capybara-brain346/PagedAttention-Simulation"
     }
 }

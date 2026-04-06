@@ -15,6 +15,17 @@ from state import AgentState
 
 logger = get_logger("app")
 
+_REPO_MENTION_RE = re.compile(r"@([\w.\-]+)")
+
+
+def _extract_tagged_repos(text: str, whitelist: dict) -> list[str]:
+    """Return whitelisted repo names mentioned as @repo in *text*."""
+    seen: list[str] = []
+    for name in _REPO_MENTION_RE.findall(text):
+        if name in whitelist and name not in seen:
+            seen.append(name)
+    return seen
+
 
 @st.cache_resource
 def _ensure_repos_once() -> dict[str, str]:
@@ -23,7 +34,7 @@ def _ensure_repos_once() -> dict[str, str]:
 
 st.set_page_config(page_title="askmycode", page_icon="🔍", layout="centered")
 st.title("🔍 Askmycode")
-st.caption("Ask questions about your code repositories.")
+st.caption("Ask questions about my code repositories.")
 
 if "display_messages" not in st.session_state:
     st.session_state.display_messages = []
@@ -43,16 +54,10 @@ with st.sidebar:
     
     Specialized in Agentic Systems, LLM Evaluation, and High-Performance Backend Design.
     
-    [GitHub](https://github.com/piyushchoudhari) | [LinkedIn](https://linkedin.com/in/piyush-choudhari) | [X](https://x.com/piyush_choudhari) | [Email](mailto:piyush@piyushchoudhari.me)
+    [GitHub](https://github.com/capybara-brain346) | [LinkedIn](https://linkedin.com/in/piyush-choudhari) | [X](https://x.com/piyush_yip) | [Email](mailto:choudhari.piyush@gmail.com)
     
     ---
-    **Stack**
-    - Python, TypeScript, C++, Node.js
-    - Agentic Systems, LLM Evaluation
-    - Research, RAG & Search
-    
-    ---
-    [View Source](https://github.com/piyushchoudhari/askmycode)
+    [GitHub](https://github.com/capybara-brain346/askmycode)
     """,
         unsafe_allow_html=True,
     )
@@ -74,7 +79,7 @@ with st.sidebar:
         if whitelist:
             st.write("**Available repos:**")
             for name in sorted(whitelist.keys()):
-                st.write(f"- `{name}`")
+                st.write(f"- `{name}` — tag with `@{name}`")
         else:
             st.warning(
                 "No repos found. Add directories to `repos/` or populate "
@@ -89,11 +94,21 @@ with st.sidebar:
         st.session_state.history = []
         st.rerun()
 
-if user_input := st.chat_input("Ask a question about your repos…"):
+if user_input := st.chat_input(
+    "Ask a question about your repos… (tag repos with @repo_name)"
+):
     logger.info("query length=%d", len(user_input))
+
+    whitelist = get_whitelist()
+    tagged_repos = _extract_tagged_repos(user_input, whitelist)
+    if tagged_repos:
+        logger.info("tagged_repos=%s", tagged_repos)
+
     st.session_state.display_messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
+        if tagged_repos:
+            st.caption("Scoped to: " + " ".join(f"`{r}`" for r in tagged_repos))
 
     initial_state: AgentState = {
         "messages": st.session_state.history
@@ -103,6 +118,7 @@ if user_input := st.chat_input("Ask a question about your repos…"):
         "query": user_input,
         "hop_count": 0,
         "answer": None,
+        "tagged_repos": tagged_repos,
     }
 
     with st.chat_message("assistant"):

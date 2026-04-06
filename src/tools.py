@@ -103,7 +103,7 @@ def search_code(query: str, repos: list[str] | None = None) -> list[dict]:
 
         try:
             proc = subprocess.run(
-                ["grep", "-rn", "--include=*", "-I", query, str(root)],
+                ["grep", "-rn", "-E", "--include=*", "-I", query, str(root)],
                 capture_output=True,
                 text=True,
                 timeout=15,
@@ -257,7 +257,11 @@ TOOL_SCHEMAS: list[dict] = [
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Search string (passed to grep -rn).",
+                        "description": (
+                            "Extended-regex search string (grep -E). "
+                            "Use | for alternation to cover synonyms in one shot: "
+                            "e.g. `scrape|requests|httpx|fetch` or `jwt|token|authenticate`."
+                        ),
                     },
                     "repos": {
                         "type": "array",
