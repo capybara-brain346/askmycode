@@ -1,0 +1,197 @@
+[
+    {
+        "id": "E-01",
+        "category": "function_lookup",
+        "query": "What does the add_document method do in capybaradb?",
+        "repo_scope": "capybaradb",
+        "expected_keywords": [
+            "add_document",
+            "capybaradb/main.py"
+        ]
+    },
+    {
+        "id": "E-02",
+        "category": "function_lookup",
+        "query": "What does the search method return in capybaradb's CapybaraDB class?",
+        "repo_scope": "capybaradb",
+        "expected_keywords": [
+            "search",
+            "top_k"
+        ]
+    },
+    {
+        "id": "E-03",
+        "category": "function_lookup",
+        "query": "What does the query_rag function do in atjbot?",
+        "repo_scope": "atjbot",
+        "expected_keywords": [
+            "query_rag",
+            "query.py"
+        ]
+    },
+    {
+        "id": "E-04",
+        "category": "function_lookup",
+        "query": "What does allocate_block do in the PagedAttention class?",
+        "repo_scope": "pagedattention-simulation",
+        "expected_keywords": [
+            "allocate_block",
+            "paged_attention.py"
+        ]
+    },
+    {
+        "id": "E-05",
+        "category": "function_lookup",
+        "query": "How does hash_block_tokens work in pagedattention-simulation?",
+        "repo_scope": "pagedattention-simulation",
+        "expected_keywords": [
+            "hash_block_tokens"
+        ]
+    },
+    {
+        "id": "E-06",
+        "category": "function_lookup",
+        "query": "What does check_rate_limit do in capynodes-backend?",
+        "repo_scope": "capynodes-backend",
+        "expected_keywords": [
+            "check_rate_limit"
+        ]
+    },
+    {
+        "id": "E-07",
+        "category": "dependency_tracing",
+        "query": "What imports Neo4j in knowflow and what does it use it for?",
+        "repo_scope": "knowflow",
+        "expected_keywords": [
+            "neo4j",
+            "GraphDatabase"
+        ]
+    },
+    {
+        "id": "E-08",
+        "category": "dependency_tracing",
+        "query": "Where is JWT authentication implemented in knowflow?",
+        "repo_scope": "knowflow",
+        "expected_keywords": [
+            "jwt",
+            "auth_service"
+        ]
+    },
+    {
+        "id": "E-09",
+        "category": "dependency_tracing",
+        "query": "What calls query_rag in atjbot?",
+        "repo_scope": "atjbot",
+        "expected_keywords": [
+            "query_rag",
+            "main"
+        ]
+    },
+    {
+        "id": "E-10",
+        "category": "dependency_tracing",
+        "query": "Where is EmailOrUsernameModelBackend defined in capynodes-backend and what does it do?",
+        "repo_scope": "capynodes-backend",
+        "expected_keywords": [
+            "EmailOrUsernameModelBackend",
+            "backends.py"
+        ]
+    },
+    {
+        "id": "E-11",
+        "category": "repo_overview",
+        "query": "What is capybaradb?",
+        "repo_scope": "capybaradb",
+        "expected_keywords": [
+            "vector"
+        ]
+    },
+    {
+        "id": "E-12",
+        "category": "repo_overview",
+        "query": "What does pagedattention-simulation implement?",
+        "repo_scope": "pagedattention-simulation",
+        "expected_keywords": [
+            "PagedAttention",
+            "KVCache"
+        ]
+    },
+    {
+        "id": "E-13",
+        "category": "repo_overview",
+        "query": "What web framework does knowflow use?",
+        "repo_scope": "knowflow",
+        "expected_keywords": [
+            "FastAPI"
+        ]
+    },
+    {
+        "id": "E-14",
+        "category": "repo_overview",
+        "query": "What language is sqs-implementation written in?",
+        "repo_scope": "sqs-implementation",
+        "expected_keywords": [
+            "TypeScript"
+        ]
+    },
+    {
+        "id": "E-15",
+        "category": "implementation_location",
+        "query": "Where is JWT token handling implemented in capynodes-backend?",
+        "repo_scope": "capynodes-backend",
+        "expected_keywords": [
+            "auth_jwt",
+            "JWT"
+        ]
+    },
+    {
+        "id": "E-16",
+        "category": "implementation_location",
+        "query": "Where is the block allocator in pagedattention-simulation?",
+        "repo_scope": "pagedattention-simulation",
+        "expected_keywords": [
+            "allocate_block",
+            "paged_attention.py"
+        ]
+    },
+    {
+        "id": "E-17",
+        "category": "implementation_location",
+        "query": "Where is the health check endpoint in knowflow?",
+        "repo_scope": "knowflow",
+        "expected_keywords": [
+            "health_check",
+            "main.py"
+        ]
+    },
+    {
+        "id": "E-18",
+        "category": "implementation_location",
+        "query": "Where is graph memory stored in knowflow and what backend is used?",
+        "repo_scope": "knowflow",
+        "expected_keywords": [
+            "neo4j",
+            "memory_service"
+        ]
+    },
+    {
+        "id": "E-19",
+        "category": "feature_presence",
+        "query": "Does knowflow use Neo4j?",
+        "repo_scope": "knowflow",
+        "expected_keywords": [
+            "neo4j",
+            "Neo4j"
+        ]
+    },
+    {
+        "id": "E-20",
+        "category": "feature_presence",
+        "query": "Does capynodes-backend use JWT for authentication?",
+        "repo_scope": "capynodes-backend",
+        "expected_keywords": [
+            "JWT",
+            "simplejwt"
+        ]
+    }
+]

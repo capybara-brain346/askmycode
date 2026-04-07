@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "dataverse-python-production-code": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "computedHash": "7299422fdb42dcede45a761921656a6450c476388731288a6e5afb0303f1d25d"
+    }
+  }
+}

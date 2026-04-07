@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import operator
 from typing import Annotated, TypedDict
 
@@ -26,3 +24,5 @@ class AgentState(TypedDict):
     hop_count: int
 
     answer: str | None
+
+    tagged_repos: list[str]
