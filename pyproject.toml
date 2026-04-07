@@ -12,5 +12,22 @@ dependencies = [
     "pydantic>=2.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "eval_llm: requires GROQ_API_KEY; tests the live LLM with mocked or real tools",
+    "e2e: full end-to-end eval with real LLM and real tools",
+]
+
 [tool.uv]
 package = false
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

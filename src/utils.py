@@ -1,10 +1,7 @@
-from __future__ import annotations
-
 import re
 import subprocess
-from pathlib import Path
-
 from collections.abc import Iterator
+from pathlib import Path
 
 from groq import Groq
 
@@ -39,7 +36,18 @@ def _parse_repo_spec(name: str, spec: str) -> tuple[str | None, Path]:
     return None, local
 
 
+_whitelist_cache: dict[str, Path] | None = None
+
+
+def _invalidate_whitelist_cache() -> None:
+    global _whitelist_cache
+    _whitelist_cache = None
+
+
 def get_whitelist() -> dict[str, Path]:
+    global _whitelist_cache
+    if _whitelist_cache is not None:
+        return _whitelist_cache
     cfg = load_config()
     whitelist: dict[str, Path] = {}
     for name, spec in cfg.get("repos", {}).items():
@@ -52,7 +60,8 @@ def get_whitelist() -> dict[str, Path]:
         for child in REPOS_ROOT.iterdir():
             if child.is_dir() and child.name not in whitelist:
                 whitelist[child.name] = child
-    return whitelist
+    _whitelist_cache = whitelist
+    return _whitelist_cache
 
 
 def ensure_repos() -> dict[str, str]:
@@ -82,6 +91,7 @@ def ensure_repos() -> dict[str, str]:
             )
             if proc.returncode == 0:
                 results[name] = "cloned"
+                _invalidate_whitelist_cache()
                 logger.info("repo '%s': cloned successfully", name)
             else:
                 msg = (proc.stderr or proc.stdout).strip().splitlines()[-1]
@@ -99,14 +109,19 @@ def ensure_repos() -> dict[str, str]:
     return results
 
 
+_groq: Groq | None = None
+
+
 def _groq_client() -> Groq:
-    if not GROQ_API_KEY:
-        raise ValueError("GROQ_API_KEY environment variable is not set.")
-    return Groq(api_key=GROQ_API_KEY, timeout=TIMEOUT_SECONDS, max_retries=5)
+    global _groq
+    if _groq is None:
+        if not GROQ_API_KEY:
+            raise ValueError("GROQ_API_KEY environment variable is not set.")
+        _groq = Groq(api_key=GROQ_API_KEY, timeout=TIMEOUT_SECONDS, max_retries=5)
+    return _groq
 
 
 def _completion_to_dict(completion) -> dict:
-    """Convert a Groq ChatCompletion object to the dict shape that nodes.py expects."""
     choices = []
     for choice in completion.choices:
         msg = choice.message
@@ -175,13 +190,16 @@ def call_llm(
 
 
 def call_llm_stream(messages: list[dict]) -> Iterator[str]:
-    """Streaming variant for synthesis — yields text tokens as they arrive."""
     model: str = DEFAULT_MODEL
     logger.debug("llm_stream model=%s", model)
-    stream = _groq_client().chat.completions.create(
-        model=model, messages=messages, stream=True
-    )
-    for chunk in stream:
-        delta = chunk.choices[0].delta.content if chunk.choices else None
-        if delta:
-            yield delta
+    try:
+        stream = _groq_client().chat.completions.create(
+            model=model, messages=messages, stream=True
+        )
+        for chunk in stream:
+            delta = chunk.choices[0].delta.content if chunk.choices else None
+            if delta:
+                yield delta
+    except Exception as exc:
+        logger.error("llm_stream_error type=%s message=%s", type(exc).__name__, exc)
+        raise

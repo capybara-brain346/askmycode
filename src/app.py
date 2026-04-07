@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import operator
 import re
@@ -7,11 +5,11 @@ import re
 import streamlit as st
 
 from config import DEFAULT_MODEL
-from utils import call_llm_stream, ensure_repos, get_whitelist
 from graph import compiled_graph
 from logger import get_logger
 from nodes import build_synthesize_messages
 from state import AgentState
+from utils import call_llm_stream, ensure_repos, get_whitelist
 
 logger = get_logger("app")
 
@@ -19,7 +17,6 @@ _REPO_MENTION_RE = re.compile(r"@([\w.\-]+)")
 
 
 def _extract_tagged_repos(text: str, whitelist: dict) -> list[str]:
-    """Return whitelisted repo names mentioned as @repo in *text*."""
     seen: list[str] = []
     for name in _REPO_MENTION_RE.findall(text):
         if name in whitelist and name not in seen:
@@ -51,11 +48,11 @@ with st.sidebar:
         """
     ### [Piyush Choudhari](https://www.piyushchoudhari.me)
     *AI & Backend Engineer*
-    
+
     Specialized in Agentic Systems, LLM Evaluation, and High-Performance Backend Design.
-    
+
     [GitHub](https://github.com/capybara-brain346) | [LinkedIn](https://linkedin.com/in/piyush-choudhari) | [X](https://x.com/piyush_yip) | [Email](mailto:choudhari.piyush@gmail.com)
-    
+
     ---
     [GitHub](https://github.com/capybara-brain346/askmycode)
     """,
@@ -136,7 +133,6 @@ if user_input := st.chat_input(
                             for tr in new_results:
                                 args_str = json.dumps(tr["args"], ensure_ascii=False)
                                 st.write(f"**`{tr['tool']}`** `{args_str}`")
-                            # merge list fields
                             accumulated["tool_results"] = operator.add(
                                 accumulated.get("tool_results") or [],
                                 new_results,
@@ -163,7 +159,6 @@ if user_input := st.chat_input(
                 hop_count = accumulated["hop_count"]
                 tool_results = accumulated.get("tool_results") or []
                 status.update(label="Synthesizing…")
-                # state="complete" is set after synthesis finishes
 
             synth_messages, prefix = build_synthesize_messages(accumulated)
             logger.info(

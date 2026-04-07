@@ -1,13 +1,12 @@
-from __future__ import annotations
-
+import datetime
 import os
 import subprocess
 from pathlib import Path
 from typing import Callable
 
-from config import MAX_FILE_SIZE
-from utils import get_whitelist
+from config import GREP_MAX_RESULTS, GREP_TIMEOUT_SECONDS, MAX_FILE_SIZE
 from state import WhitelistViolation
+from utils import get_whitelist
 
 
 def _validate_repo(repo: str) -> Path:
@@ -106,7 +105,7 @@ def search_code(query: str, repos: list[str] | None = None) -> list[dict]:
                 ["grep", "-rn", "-E", "--include=*", "-I", query, str(root)],
                 capture_output=True,
                 text=True,
-                timeout=15,
+                timeout=GREP_TIMEOUT_SECONDS,
             )
         except subprocess.TimeoutExpired:
             results.append({"repo": repo_name, "error": "grep timed out"})
@@ -117,7 +116,7 @@ def search_code(query: str, repos: list[str] | None = None) -> list[dict]:
             )
             continue
 
-        for line in proc.stdout.splitlines()[:50]:
+        for line in proc.stdout.splitlines()[:GREP_MAX_RESULTS]:
             parts = line.split(":", 2)
             if len(parts) < 3:
                 continue
@@ -134,7 +133,7 @@ def search_code(query: str, repos: list[str] | None = None) -> list[dict]:
                     "snippet": snippet.strip(),
                 }
             )
-        if len(results) >= 50:
+        if len(results) >= GREP_MAX_RESULTS:
             break
 
     return results
@@ -161,8 +160,6 @@ def get_repo_metadata(repo: str) -> dict:
             ext_counts[suffix] = ext_counts.get(suffix, 0) + 1
 
     top_exts = sorted(ext_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-
-    import datetime
 
     last_modified = (
         datetime.datetime.fromtimestamp(

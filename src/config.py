@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import os
 from pathlib import Path
@@ -38,5 +36,15 @@ CLONE_TIMEOUT_SECONDS: int = 120
 
 
 def load_config() -> dict:
-    with CONFIG_PATH.open() as f:
-        return json.load(f)
+    try:
+        with CONFIG_PATH.open() as f:
+            return json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"Config file not found: {CONFIG_PATH}. "
+            "Create config.json at the project root with a 'repos' key."
+        ) from None
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"config.json is not valid JSON ({exc}). Fix the syntax and restart."
+        ) from exc

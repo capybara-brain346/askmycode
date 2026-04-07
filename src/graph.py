@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Literal
 
 from langgraph.graph import END, StateGraph
@@ -12,7 +10,7 @@ from state import AgentState
 def should_continue(state: AgentState) -> Literal["tools_node", "__end__"]:
     last = state["messages"][-1]
     tool_calls = last.get("tool_calls")
-    if tool_calls and len(tool_calls) > 0:
+    if tool_calls:
         return "tools_node"
     return END
 

@@ -1,19 +1,17 @@
-from __future__ import annotations
-
 import logging
-import os
 import sys
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
 
-from dotenv import load_dotenv
+from config import (
+    LOG_BACKUP_COUNT,
+    LOG_DIR,
+    LOG_FILE,
+    LOG_LEVEL,
+    LOG_MAX_BYTES,
+    LOG_NAME,
+)
 
-load_dotenv()
-
-_PROJECT_ROOT = Path(__file__).resolve().parents[1]
-_LOG_DIR = _PROJECT_ROOT / "logs"
-_LOG_FILE = _LOG_DIR / "askmycode.log"
-LOGGER_NAME = "askmycode"
+LOGGER_NAME = LOG_NAME
 
 _RESET = "\033[0m"
 _COLOURS = {
@@ -33,9 +31,7 @@ class _ColouredFormatter(logging.Formatter):
 
 
 def _resolve_level() -> int:
-    """Read LOG_LEVEL from the environment; default INFO."""
-    raw = os.environ.get("LOG_LEVEL", "INFO").upper()
-    level = getattr(logging, raw, None)
+    level = getattr(logging, LOG_LEVEL, None)
     if not isinstance(level, int):
         level = logging.INFO
     return level
@@ -49,7 +45,7 @@ def _setup_logger() -> logging.Logger:
     root.setLevel(logging.DEBUG)
     root.propagate = False
 
-    _LOG_DIR.mkdir(exist_ok=True)
+    LOG_DIR.mkdir(exist_ok=True)
 
     terminal_level = _resolve_level()
 
@@ -63,9 +59,9 @@ def _setup_logger() -> logging.Logger:
     )
 
     file_handler = RotatingFileHandler(
-        _LOG_FILE,
-        maxBytes=5 * 1024 * 1024,  # 5 MB
-        backupCount=3,
+        LOG_FILE,
+        maxBytes=LOG_MAX_BYTES,
+        backupCount=LOG_BACKUP_COUNT,
         encoding="utf-8",
     )
     file_handler.setLevel(logging.DEBUG)
@@ -85,7 +81,6 @@ logger = _setup_logger()
 
 
 def get_logger(name: str | None = None) -> logging.Logger:
-    """Return a child logger under 'askmycode'."""
     if name:
         return logging.getLogger(f"{LOGGER_NAME}.{name}")
     return logger

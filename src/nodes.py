@@ -1,12 +1,10 @@
-from __future__ import annotations
-
 import json
 
 from config import CONTEXT_BUDGET_CHARS, MAX_HOPS
-from utils import call_llm
 from logger import get_logger
 from state import AgentState, ToolResult, WhitelistViolation
 from tools import TOOL_FUNCTIONS, TOOL_SCHEMAS
+from utils import call_llm
 
 logger = get_logger("nodes")
 
@@ -111,11 +109,16 @@ def _format_tool_results_for_context(tool_results: list[ToolResult]) -> str:
 
 def _trim_tool_results_to_budget(tool_results: list[ToolResult]) -> list[ToolResult]:
     total = sum(len(tr["result"]) for tr in tool_results)
-    trimmed = list(tool_results)
-    while total > CONTEXT_BUDGET_CHARS and len(trimmed) > 1:
-        removed = trimmed.pop(0)
-        total -= len(removed["result"])
-    return trimmed
+    if total <= CONTEXT_BUDGET_CHARS:
+        return list(tool_results)
+    keep_from = 0
+    for i, tr in enumerate(tool_results):
+        if total <= CONTEXT_BUDGET_CHARS:
+            break
+        if i < len(tool_results) - 1:
+            total -= len(tr["result"])
+            keep_from = i + 1
+    return list(tool_results[keep_from:])
 
 
 def plan_node(state: AgentState) -> dict:
@@ -133,7 +136,16 @@ def plan_node(state: AgentState) -> dict:
         )
 
     messages = [{"role": "system", "content": system_content}] + state["messages"]
-    response = call_llm(messages, tools=TOOL_SCHEMAS)
+    try:
+        response = call_llm(messages, tools=TOOL_SCHEMAS)
+    except Exception as exc:
+        logger.error(
+            "plan_node call_llm failed hop=%d type=%s message=%s",
+            hop,
+            type(exc).__name__,
+            exc,
+        )
+        raise
     assistant_msg: dict = response["choices"][0]["message"]
     tool_calls = assistant_msg.get("tool_calls") or []
     if tool_calls:
@@ -243,7 +255,16 @@ def observe_node(state: AgentState) -> dict:
             "answer": "READY",
         }
 
-    response = call_llm(observe_messages, json_mode=True)
+    try:
+        response = call_llm(observe_messages, json_mode=True)
+    except Exception as exc:
+        logger.error(
+            "observe_node call_llm failed hop=%d type=%s message=%s",
+            new_hop,
+            type(exc).__name__,
+            exc,
+        )
+        raise
     raw_content: str = response["choices"][0]["message"]["content"]
 
     try:
@@ -274,10 +295,6 @@ def observe_node(state: AgentState) -> dict:
 
 
 def build_synthesize_messages(state: AgentState) -> tuple[list[dict], str]:
-    """Return (messages, prefix) for the synthesis LLM call.
-
-    The prefix is prepended to the answer when MAX_HOPS was reached.
-    """
     trimmed_results = _trim_tool_results_to_budget(state["tool_results"])
     context_str = _format_tool_results_for_context(trimmed_results)
 
