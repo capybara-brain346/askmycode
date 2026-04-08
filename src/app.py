@@ -61,6 +61,27 @@ with st.sidebar:
 
     st.divider()
 
+    st.header("Repo scope")
+    try:
+        whitelist = get_whitelist()
+        if whitelist:
+            repo_options = ["All repos"] + sorted(whitelist.keys())
+            st.selectbox(
+                "Select a repository",
+                repo_options,
+                key="selected_repo",
+                help="Restrict every query to a single repository.",
+            )
+        else:
+            st.warning(
+                "No repos found. Add directories to `repos/` or populate "
+                "`config.json` → `repos` to get started."
+            )
+    except Exception as exc:
+        st.error(f"Could not load config: {exc}")
+
+    st.divider()
+
     st.header("Configuration")
     try:
         st.write(f"**Model:** `{DEFAULT_MODEL}`")
@@ -76,12 +97,7 @@ with st.sidebar:
         if whitelist:
             st.write("**Available repos:**")
             for name in sorted(whitelist.keys()):
-                st.write(f"- `{name}` — tag with `@{name}`")
-        else:
-            st.warning(
-                "No repos found. Add directories to `repos/` or populate "
-                "`config.json` → `repos` to get started."
-            )
+                st.write(f"- `{name}`")
     except Exception as exc:
         st.error(f"Could not load config: {exc}")
 
@@ -97,7 +113,11 @@ if user_input := st.chat_input(
     logger.info("query length=%d", len(user_input))
 
     whitelist = get_whitelist()
-    tagged_repos = _extract_tagged_repos(user_input, whitelist)
+    sidebar_repo = st.session_state.get("selected_repo", "All repos")
+    if sidebar_repo and sidebar_repo != "All repos":
+        tagged_repos = [sidebar_repo]
+    else:
+        tagged_repos = _extract_tagged_repos(user_input, whitelist)
     if tagged_repos:
         logger.info("tagged_repos=%s", tagged_repos)
 

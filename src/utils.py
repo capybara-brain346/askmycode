@@ -161,19 +161,21 @@ def call_llm(
     messages: list[dict],
     tools: list[dict] | None = None,
     json_mode: bool = False,
+    tool_choice: str = "auto",
 ) -> dict:
     model: str = DEFAULT_MODEL
     tool_names = [t["function"]["name"] for t in (tools or [])]
     logger.debug(
-        "llm_call model=%s tool_count=%d json_mode=%s",
+        "llm_call model=%s tool_count=%d json_mode=%s tool_choice=%s",
         model,
         len(tool_names),
         json_mode,
+        tool_choice,
     )
     kwargs: dict = {"model": model, "messages": messages}
     if tools:
         kwargs["tools"] = tools
-        kwargs["tool_choice"] = "auto"
+        kwargs["tool_choice"] = tool_choice
     if json_mode:
         kwargs["response_format"] = {"type": "json_object"}
     completion = _groq_client().chat.completions.create(**kwargs)

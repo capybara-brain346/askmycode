@@ -1,4 +1,5 @@
 import json
+import uuid
 
 from config import CONTEXT_BUDGET_CHARS, MAX_HOPS
 from logger import get_logger
@@ -10,6 +11,9 @@ logger = get_logger("nodes")
 
 PLAN_SYSTEM = """\
 You are askmycode, an expert software engineer who answers precise questions about codebases by reading them directly.
+
+## Mandatory rule
+You have NO prior knowledge of these repositories. You MUST call at least one tool on every turn — do not answer from memory or training data. If you already know the answer from your training, that knowledge may be wrong or outdated for this specific codebase. Always verify by reading the actual files.
 
 Tools available:
 - list_repos       — list all available repos
@@ -121,6 +125,28 @@ def _trim_tool_results_to_budget(tool_results: list[ToolResult]) -> list[ToolRes
     return list(tool_results[keep_from:])
 
 
+def _forced_tool_call(state: AgentState) -> dict:
+    tagged = state.get("tagged_repos") or []
+    if tagged:
+        fn_name = "get_repo_metadata"
+        fn_args = json.dumps({"repo": tagged[0]})
+    else:
+        fn_name = "list_repos"
+        fn_args = "{}"
+    call_id = f"forced_{uuid.uuid4().hex[:8]}"
+    return {
+        "role": "assistant",
+        "content": None,
+        "tool_calls": [
+            {
+                "id": call_id,
+                "type": "function",
+                "function": {"name": fn_name, "arguments": fn_args},
+            }
+        ],
+    }
+
+
 def plan_node(state: AgentState) -> dict:
     hop = state["hop_count"] + 1
     logger.debug("plan hop=%d", hop)
@@ -148,7 +174,17 @@ def plan_node(state: AgentState) -> dict:
         raise
     assistant_msg: dict = response["choices"][0]["message"]
     tool_calls = assistant_msg.get("tool_calls") or []
-    if tool_calls:
+
+    # If the model skipped tools on the very first hop (no prior exploration),
+    # inject a mandatory bootstrapping call so synthesis never runs on zero evidence.
+    if not tool_calls and hop == 1 and not state.get("tool_results"):
+        assistant_msg = _forced_tool_call(state)
+        logger.warning(
+            "plan hop=%d no_tool_calls forced=%s",
+            hop,
+            assistant_msg["tool_calls"][0]["function"]["name"],
+        )
+    elif tool_calls:
         names = [tc["function"]["name"] for tc in tool_calls]
         logger.debug("plan hop=%d tools=%s", hop, names)
     else:
