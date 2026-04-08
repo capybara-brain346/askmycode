@@ -7,7 +7,7 @@ import pytest
 from dotenv import load_dotenv
 
 # Load .env before any test module is collected, so that os.environ-based
-# pytest.mark.skipif conditions (e.g. GROQ_API_KEY checks) see the values.
+# pytest.mark.skipif conditions (e.g. OPENROUTER_API_KEY checks) see the values.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # src/ uses bare imports (no package prefix), so it must be on sys.path.

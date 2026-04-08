@@ -15,7 +15,7 @@ Individual test failures are soft (xfail-style marks are not used; instead
 the test is always collected and the suite-level assert does the gating).
 That way a single flaky query does not block the whole batch.
 
-Requires GROQ_API_KEY and the repos to be present under repos/.
+Requires OPENROUTER_API_KEY and the repos to be present under repos/.
 Both checks are done at collection time via module-level skip conditions.
 """
 
@@ -38,8 +38,8 @@ from evals.judge import judge_grounding  # noqa: E402
 pytestmark = pytest.mark.e2e
 
 skip_no_key = pytest.mark.skipif(
-    not os.environ.get("GROQ_API_KEY"),
-    reason="GROQ_API_KEY not set — skipping E2E eval",
+    not os.environ.get("OPENROUTER_API_KEY"),
+    reason="OPENROUTER_API_KEY not set — skipping E2E eval",
 )
 
 _GOLDEN_PATH = Path(__file__).with_name("golden_set.json")

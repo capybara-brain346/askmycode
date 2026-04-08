@@ -11,7 +11,7 @@ Each test:
   4. Asserts structural constraints on that sequence.
   5. Logs the result to logs/eval_results.csv.
 
-Requires GROQ_API_KEY to be set; tests are automatically skipped otherwise.
+Requires OPENROUTER_API_KEY to be set; tests are automatically skipped otherwise.
 """
 
 from __future__ import annotations
@@ -36,8 +36,8 @@ _logger = EvalLogger()
 pytestmark = pytest.mark.eval_llm
 
 skip_no_key = pytest.mark.skipif(
-    not os.environ.get("GROQ_API_KEY"),
-    reason="GROQ_API_KEY not set — skipping LLM eval",
+    not os.environ.get("OPENROUTER_API_KEY"),
+    reason="OPENROUTER_API_KEY not set — skipping LLM eval",
 )
 
 

@@ -15,7 +15,7 @@ G2-03  Truncated-file reference      → at least one violation flagged
 G2-04  Wrong repo attribution        → at least one violation flagged
 G2-05  Fabricated line number        → at least one violation flagged
 
-Requires GROQ_API_KEY.
+Requires OPENROUTER_API_KEY.
 """
 
 from __future__ import annotations
@@ -38,8 +38,8 @@ _logger = EvalLogger()
 pytestmark = pytest.mark.eval_llm
 
 skip_no_key = pytest.mark.skipif(
-    not os.environ.get("GROQ_API_KEY"),
-    reason="GROQ_API_KEY not set — skipping LLM eval",
+    not os.environ.get("OPENROUTER_API_KEY"),
+    reason="OPENROUTER_API_KEY not set — skipping LLM eval",
 )
 
 # ---------------------------------------------------------------------------

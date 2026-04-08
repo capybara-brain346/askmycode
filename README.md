@@ -20,7 +20,7 @@ askmycode is a Streamlit app for asking questions about local code repositories 
 1. Create a `.env` file with your Groq key:
 
    ```env
-   GROQ_API_KEY=your_key_here
+   OPENROUTER_API_KEY=your_key_here
    ```
 
 2. Configure repositories in `config.json`:
@@ -65,4 +65,4 @@ Run them with:
 uv run pytest
 ```
 
-The LLM-backed tests require `GROQ_API_KEY`; they are skipped if the key is not set.
+The LLM-backed tests require `OPENROUTER_API_KEY`; they are skipped if the key is not set.

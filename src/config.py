@@ -17,7 +17,7 @@ LOG_LEVEL: str = os.environ.get("LOG_LEVEL", "INFO").upper()
 LOG_MAX_BYTES: int = 5 * 1024 * 1024  # 5 MB
 LOG_BACKUP_COUNT: int = 3
 
-GROQ_API_KEY: str = os.environ.get("GROQ_API_KEY", "")
+OPENROUTER_API_KEY: str = os.environ.get("OPENROUTER_API_KEY", "")
 
 DEFAULT_MODEL: str = "qwen/qwen3-32b"
 

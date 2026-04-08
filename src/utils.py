@@ -3,12 +3,12 @@ import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 
-from groq import Groq
+from openai import OpenAI
 
 from config import (
     CLONE_TIMEOUT_SECONDS,
     DEFAULT_MODEL,
-    GROQ_API_KEY,
+    OPENROUTER_API_KEY,
     PROJECT_ROOT,
     REPOS_ROOT,
     TIMEOUT_SECONDS,
@@ -109,16 +109,21 @@ def ensure_repos() -> dict[str, str]:
     return results
 
 
-_groq: Groq | None = None
+_openai: OpenAI | None = None
 
 
-def _groq_client() -> Groq:
-    global _groq
-    if _groq is None:
-        if not GROQ_API_KEY:
-            raise ValueError("GROQ_API_KEY environment variable is not set.")
-        _groq = Groq(api_key=GROQ_API_KEY, timeout=TIMEOUT_SECONDS, max_retries=5)
-    return _groq
+def _openai_client() -> OpenAI:
+    global _openai
+    if _openai is None:
+        if not OPENROUTER_API_KEY:
+            raise ValueError("OPENROUTER_API_KEY environment variable is not set.")
+        _openai = OpenAI(
+            api_key=OPENROUTER_API_KEY,
+            base_url="https://openrouter.ai/api/v1",
+            timeout=TIMEOUT_SECONDS,
+            max_retries=5,
+        )
+    return _openai
 
 
 def _completion_to_dict(completion) -> dict:
@@ -178,7 +183,7 @@ def call_llm(
         kwargs["tool_choice"] = tool_choice
     if json_mode:
         kwargs["response_format"] = {"type": "json_object"}
-    completion = _groq_client().chat.completions.create(**kwargs)
+    completion = _openai_client().chat.completions.create(**kwargs)
     data = _completion_to_dict(completion)
     finish_reason = data["choices"][0].get("finish_reason", "unknown")
     usage = data.get("usage", {})
@@ -195,7 +200,7 @@ def call_llm_stream(messages: list[dict]) -> Iterator[str]:
     model: str = DEFAULT_MODEL
     logger.debug("llm_stream model=%s", model)
     try:
-        stream = _groq_client().chat.completions.create(
+        stream = _openai_client().chat.completions.create(
             model=model, messages=messages, stream=True
         )
         for chunk in stream:
