@@ -20,7 +20,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
-    eval_llm: requires OPENROUTER_API_KEY; tests the live LLM with mocked or real tools
+    "eval_llm: requires OPENROUTER_API_KEY; tests the live LLM with mocked or real tools",
     "e2e: full end-to-end eval with real LLM and real tools",
 ]
 

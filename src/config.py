@@ -19,7 +19,7 @@ LOG_BACKUP_COUNT: int = 3
 
 OPENROUTER_API_KEY: str = os.environ.get("OPENROUTER_API_KEY", "")
 
-DEFAULT_MODEL: str = "qwen/qwen3-32b"
+DEFAULT_MODEL: str = "google/gemma-4-26b-a4b-it"
 
 MAX_HOPS: int = 10
 MAX_FILES_PER_HOP: int = 3

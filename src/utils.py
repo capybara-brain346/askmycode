@@ -146,6 +146,9 @@ def _completion_to_dict(completion) -> dict:
         msg_dict: dict = {"role": msg.role, "content": msg.content}
         if tool_calls:
             msg_dict["tool_calls"] = tool_calls
+        reasoning = getattr(msg, "reasoning", None)
+        if reasoning:
+            msg_dict["reasoning"] = reasoning
         choices.append(
             {
                 "message": msg_dict,
@@ -167,6 +170,7 @@ def call_llm(
     tools: list[dict] | None = None,
     json_mode: bool = False,
     tool_choice: str = "auto",
+    reasoning: dict | None = None,
 ) -> dict:
     model: str = DEFAULT_MODEL
     tool_names = [t["function"]["name"] for t in (tools or [])]
@@ -183,6 +187,15 @@ def call_llm(
         kwargs["tool_choice"] = tool_choice
     if json_mode:
         kwargs["response_format"] = {"type": "json_object"}
+    _reasoning = (
+        reasoning
+        if reasoning is not None
+        else {
+            "effort": "high",
+            "exclude": False,
+        }
+    )
+    kwargs["extra_body"] = {"reasoning": _reasoning}
     completion = _openai_client().chat.completions.create(**kwargs)
     data = _completion_to_dict(completion)
     finish_reason = data["choices"][0].get("finish_reason", "unknown")
